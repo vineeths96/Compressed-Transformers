@@ -18,6 +18,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from utils.optimizers_and_distributions import CustomLRAdamOptimizer, LabelSmoothingDistribution
 from models.definitions.transformer_model import Transformer
+from models.definitions.binarizer import binarize_model
 from utils.data_utils import get_data_loaders, get_masks_and_count_tokens, get_src_and_trg_batches, DatasetType, LanguageDirection
 import utils.utils as utils
 from utils.constants import *
@@ -119,7 +120,10 @@ def train_transformer(training_config):
         number_of_heads=BASELINE_MODEL_NUMBER_OF_HEADS,
         number_of_layers=BASELINE_MODEL_NUMBER_OF_LAYERS,
         dropout_probability=BASELINE_MODEL_DROPOUT_PROB
-    ).to(device)
+    )
+
+    baseline_transformer = binarize_model(baseline_transformer).to(device)
+    print(baseline_transformer)
 
     # Step 3: Prepare other training related utilities
     kl_div_loss = nn.KLDivLoss(reduction='batchmean')  # gives better BLEU score than "mean"
@@ -178,7 +182,7 @@ if __name__ == "__main__":
 
     # Logging/debugging/checkpoint related (helps a lot with experimentation)
     parser.add_argument("--enable_tensorboard", type=bool, help="enable tensorboard logging", default=True)
-    parser.add_argument("--console_log_freq", type=int, help="log to output console (batch) freq", default=10)
+    parser.add_argument("--console_log_freq", type=int, help="log to output console (batch) freq", default=250)
     parser.add_argument("--checkpoint_freq", type=int, help="checkpoint model saving (epoch) freq", default=1)
     args = parser.parse_args()
 
