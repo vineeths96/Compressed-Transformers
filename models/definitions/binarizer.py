@@ -69,7 +69,7 @@ class BinarizedLinear(nn.Module):
             + str(self.out_features) + ')'
 
 
-def binarize_model(model):
+def binarize(model):
     for name, layer in model.named_children():
         if 'generator' in name:
             continue
@@ -81,6 +81,6 @@ def binarize_model(model):
             layer_types = [type(layer) for layer in layer.modules()]
 
             if nn.Linear in layer_types:
-                quantize(layer)
+                binarize(layer)
 
     return model

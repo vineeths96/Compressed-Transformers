@@ -18,7 +18,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from utils.optimizers_and_distributions import CustomLRAdamOptimizer, LabelSmoothingDistribution
 from models.definitions.transformer_model import Transformer
-from models.definitions.binarizer import binarize_model
+from models.definitions.binarizer import binarize
 from utils.data_utils import get_data_loaders, get_masks_and_count_tokens, get_src_and_trg_batches, DatasetType, LanguageDirection
 import utils.utils as utils
 from utils.constants import *
@@ -122,7 +122,7 @@ def train_transformer(training_config):
         dropout_probability=BASELINE_MODEL_DROPOUT_PROB
     )
 
-    baseline_transformer = binarize_model(baseline_transformer).to(device)
+    baseline_transformer = binarize(baseline_transformer).to(device)
     print(baseline_transformer)
 
     # Step 3: Prepare other training related utilities
