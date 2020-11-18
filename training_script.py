@@ -121,7 +121,7 @@ def train_transformer(training_config):
         number_of_heads=BASELINE_MODEL_NUMBER_OF_HEADS,
         number_of_layers=BASELINE_MODEL_NUMBER_OF_LAYERS,
         dropout_probability=BASELINE_MODEL_DROPOUT_PROB,
-        binary=training_config['binary']
+        binary=training_config['binarize']
     )
 
     if training_config['binarize']:
