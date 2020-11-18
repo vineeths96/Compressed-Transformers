@@ -119,10 +119,15 @@ def train_transformer(training_config):
         trg_vocab_size=trg_vocab_size,
         number_of_heads=BASELINE_MODEL_NUMBER_OF_HEADS,
         number_of_layers=BASELINE_MODEL_NUMBER_OF_LAYERS,
-        dropout_probability=BASELINE_MODEL_DROPOUT_PROB
+        dropout_probability=BASELINE_MODEL_DROPOUT_PROB,
+        binary=training_config['binary']
     )
 
-    baseline_transformer = binarize(baseline_transformer).to(device)
+    if training_config['binary']:
+        baseline_transformer = binarize(baseline_transformer).to(device)
+    else:
+        baseline_transformer = baseline_transformer.to(device)
+
     print(baseline_transformer)
 
     # Step 3: Prepare other training related utilities
@@ -184,6 +189,7 @@ if __name__ == "__main__":
     parser.add_argument("--enable_tensorboard", type=bool, help="enable tensorboard logging", default=True)
     parser.add_argument("--console_log_freq", type=int, help="log to output console (batch) freq", default=250)
     parser.add_argument("--checkpoint_freq", type=int, help="checkpoint model saving (epoch) freq", default=1)
+    parser.add_argument("--binary", type=bool, help="binarize linear layers", default=False)
     args = parser.parse_args()
 
     # Wrapping training configuration into a dictionary

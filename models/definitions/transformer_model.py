@@ -25,7 +25,7 @@ from utils.constants import *
 
 class Transformer(nn.Module):
 
-    def __init__(self, model_dimension, src_vocab_size, trg_vocab_size, number_of_heads, number_of_layers, dropout_probability, log_attention_weights=False):
+    def __init__(self, model_dimension, src_vocab_size, trg_vocab_size, number_of_heads, number_of_layers, dropout_probability, log_attention_weights=False, binary=False):
         super().__init__()
 
         # Embeds source/target token ids into embedding vectors
@@ -38,7 +38,7 @@ class Transformer(nn.Module):
         self.trg_pos_embedding = PositionalEncoding(model_dimension, dropout_probability)
 
         # All of these will get deep-copied multiple times internally
-        mha = MultiHeadedAttention(model_dimension, number_of_heads, dropout_probability, log_attention_weights)
+        mha = MultiHeadedAttention(model_dimension, number_of_heads, dropout_probability, log_attention_weights, binary)
         pwn = PositionwiseFeedForwardNet(model_dimension, dropout_probability)
         encoder_layer = EncoderLayer(model_dimension, dropout_probability, mha, pwn)
         decoder_layer = DecoderLayer(model_dimension, dropout_probability, mha, pwn)
@@ -291,10 +291,11 @@ class MultiHeadedAttention(nn.Module):
 
     """
 
-    def __init__(self, model_dimension, number_of_heads, dropout_probability, log_attention_weights):
+    def __init__(self, model_dimension, number_of_heads, dropout_probability, log_attention_weights, binary):
         super().__init__()
         assert model_dimension % number_of_heads == 0, f'Model dimension must be divisible by the number of heads.'
 
+        self.binary = binary
         self.head_dimension = int(model_dimension / number_of_heads)
         self.number_of_heads = number_of_heads
 
@@ -312,7 +313,11 @@ class MultiHeadedAttention(nn.Module):
         # Notation: B - batch size, S/T max src/trg token-sequence length, NH - number of heads, HD - head dimension
         # query/key/value shape = (B, NH, S/T, HD), scores shape = (B, NH, S, S), (B, NH, T, T) or (B, NH, T, S)
         # scores have different shapes as MHA is used in 3 contexts, self attention for src/trg and source attending MHA
-        scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(self.head_dimension)
+
+        if self.binary:
+            scores = torch.matmul(query, key.transpose(-2, -1)) / (25 * self.head_dimension)
+        else:
+            scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(self.head_dimension)
 
         # Step 2: Optionally mask tokens whose representations we want to ignore by setting a big negative number
         # to locations corresponding to those tokens (force softmax to output 0 probability on those locations).
