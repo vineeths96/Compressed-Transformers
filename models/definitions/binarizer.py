@@ -69,18 +69,20 @@ class BinarizedLinear(nn.Module):
             + str(self.out_features) + ')'
 
 
-def binarize(model):
+def binarize(model, binarize_all_linear=False):
     for name, layer in model.named_children():
         if 'generator' in name:
             continue
 
-        if type(layer) == nn.Linear:
+        if type(layer) == nn.Linear and binarize_all_linear:
+            model.__dict__['_modules'][name] = BinarizedLinear(layer.in_features, layer.out_features)
+        elif type(layer) == nn.Linear:
             if name in ['0', '1', '2']:
                 model.__dict__['_modules'][name] = BinarizedLinear(layer.in_features, layer.out_features)
         else:
             layer_types = [type(layer) for layer in layer.modules()]
 
             if nn.Linear in layer_types:
-                binarize(layer)
+                binarize(layer, binarize_all_linear)
 
     return model

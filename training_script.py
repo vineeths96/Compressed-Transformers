@@ -19,6 +19,7 @@ from torch.utils.tensorboard import SummaryWriter
 from utils.optimizers_and_distributions import CustomLRAdamOptimizer, LabelSmoothingDistribution
 from models.definitions.transformer_model import Transformer
 from models.definitions.binarizer import binarize
+from models.definitions.quantizer import quantizer
 from utils.data_utils import get_data_loaders, get_masks_and_count_tokens, get_src_and_trg_batches, DatasetType, LanguageDirection
 import utils.utils as utils
 from utils.constants import *
@@ -123,8 +124,10 @@ def train_transformer(training_config):
         binary=training_config['binary']
     )
 
-    if training_config['binary']:
-        baseline_transformer = binarize(baseline_transformer).to(device)
+    if training_config['binarize']:
+        baseline_transformer = binarize(baseline_transformer, training_config['binarize_all_linear']).to(device)
+    elif training_config['quantize']:
+        baseline_transformer = quantizer(baseline_transformer, training_config['quantize_bits'], training_config['quantize_all_linear']).to(device)
     else:
         baseline_transformer = baseline_transformer.to(device)
 
@@ -189,7 +192,14 @@ if __name__ == "__main__":
     parser.add_argument("--enable_tensorboard", type=bool, help="enable tensorboard logging", default=True)
     parser.add_argument("--console_log_freq", type=int, help="log to output console (batch) freq", default=250)
     parser.add_argument("--checkpoint_freq", type=int, help="checkpoint model saving (epoch) freq", default=1)
-    parser.add_argument("--binary", type=bool, help="binarize linear layers", default=False)
+
+    parser.add_argument("--binarize", type=bool, help="binarize attention linear layers", default=False)
+    parser.add_argument("--binarize_all_linear", type=bool, help="binarize all linear layers", default=False)
+
+    parser.add_argument("--quantize", type=bool, help="quantize attention linear layers", default=False)
+    parser.add_argument("--quantize_bits", type=int, help="quantize attention linear layers", default=7)
+    parser.add_argument("--quantize_all_linear", type=bool, help="quantize attention linear layers", default=False)
+
     args = parser.parse_args()
 
     # Wrapping training configuration into a dictionary
