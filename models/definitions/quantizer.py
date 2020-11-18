@@ -110,6 +110,7 @@ class QuantizedLinear(nn.Linear):
                 out = super().forward(input)
             self._step += 1
         else:
+            self._eval()
             out = self.inference_quantized_forward(input)
         return out
 
