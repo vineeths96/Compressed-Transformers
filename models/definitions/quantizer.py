@@ -115,12 +115,12 @@ class QuantizedLinear(nn.Linear):
         return out
 
 
-def quantizer(model, quantization_bits=7, binarize_all_linear=False):
+def quantizer(model, quantization_bits=7, quantize_all_linear=False):
     for name, layer in model.named_children():
         if 'generator' in name:
             continue
 
-        if type(layer) == nn.Linear and binarize_all_linear:
+        if type(layer) == nn.Linear and quantize_all_linear:
             model.__dict__['_modules'][name] = QuantizedLinear(layer.in_features, layer.out_features, weight_bits=quantization_bits)
         elif type(layer) == nn.Linear:
             if name in ['0', '1', '2']:
@@ -129,6 +129,6 @@ def quantizer(model, quantization_bits=7, binarize_all_linear=False):
             layer_types = [type(l) for l in layer.modules()]
 
             if nn.Linear in layer_types:
-                quantizer(layer, quantization_bits, binarize_all_linear)
+                quantizer(layer, quantization_bits, quantize_all_linear)
 
     return model
