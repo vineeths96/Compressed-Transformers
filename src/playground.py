@@ -11,11 +11,11 @@ from utils.optimizers_and_distributions import CustomLRAdamOptimizer, LabelSmoot
 
 def display(imgs_to_display):
     num_display_imgs = 2
-    assert len(imgs_to_display) == num_display_imgs, f'Expected {num_display_imgs} got {len(imgs_to_display)} images.'
+    assert len(imgs_to_display) == num_display_imgs, f"Expected {num_display_imgs} got {len(imgs_to_display)} images."
 
     fig = plt.figure(figsize=(10, 5))
-    title_fontsize = 'x-small'
-    titles = ['one hot distribution', 'label smoothing distribution']
+    title_fontsize = "x-small"
+    titles = ["one hot distribution", "label smoothing distribution"]
 
     gs = fig.add_gridspec(1, 2, left=0.02, right=0.98, wspace=0.05, hspace=0.3)
 
@@ -26,7 +26,7 @@ def display(imgs_to_display):
     for i in range(num_display_imgs):
         ax[i].imshow(imgs_to_display[i])
         ax[i].set_title(titles[i], fontsize=title_fontsize)
-        ax[i].tick_params(which='both', bottom=False, left=False, labelleft=False, labelbottom=False)
+        ax[i].tick_params(which="both", bottom=False, left=False, labelleft=False, labelbottom=False)
 
     plt.show()
 
@@ -35,7 +35,9 @@ def visualize_label_smoothing():
     pad_token_id = 0  # index 0 of the vocab corresponds to the pad token
     trg_vocab_size = 4  # assume only 4 words in our vocab - a toy example
 
-    smooth = LabelSmoothingDistribution(smoothing_value=0.1, pad_token_id=pad_token_id, trg_vocab_size=trg_vocab_size, device='cpu')
+    smooth = LabelSmoothingDistribution(
+        smoothing_value=0.1, pad_token_id=pad_token_id, trg_vocab_size=trg_vocab_size, device="cpu"
+    )
     one_hot = OneHotDistribution(pad_token_id=pad_token_id, trg_vocab_size=trg_vocab_size)
 
     target = torch.tensor([[1], [2], [3], [0]])
@@ -61,12 +63,10 @@ def visualize_custom_lr_adam():
         for model_dimension in model_dimensions:
 
             optimizer = CustomLRAdamOptimizer(
-                Adam(model.parameters(), betas=(0.9, 0.98), eps=1e-9),
-                model_dimension,
-                warmup
+                Adam(model.parameters(), betas=(0.9, 0.98), eps=1e-9), model_dimension, warmup
             )
 
-            label = f'warmup:{warmup}_dim:{model_dimension}'
+            label = f"warmup:{warmup}_dim:{model_dimension}"
             learning_rates = []
 
             # Collect the learning rates
@@ -82,9 +82,9 @@ def visualize_custom_lr_adam():
     for learning_rates, label in zip(lr_data, labels):
         plt.plot(learning_rates[:num_of_steps_to_plot], label=label)
     plt.legend()
-    plt.title('Learning rate schedule')
-    plt.xlabel('number of training steps')
-    plt.ylabel('learning rate')
+    plt.title("Learning rate schedule")
+    plt.xlabel("number of training steps")
+    plt.ylabel("learning rate")
     plt.show()
 
 
@@ -99,15 +99,16 @@ def visualize_positional_encodings():
     shape = positional_encodings_table.shape
     data_type = positional_encodings_table.dtype
     width_mult = 9  # make it almost square
-    positional_encodings_img = np.zeros((shape[0], width_mult*shape[1]), dtype=data_type)
+    positional_encodings_img = np.zeros((shape[0], width_mult * shape[1]), dtype=data_type)
     for i in range(width_mult):
         positional_encodings_img[:, i::width_mult] = positional_encodings_table
 
     # Display the positional encodings table
     # Every row in this table gets added to a particular token position
     # Row 0 always gets added to 0th token embedding, row 1 gets added to 1st token embedding, etc.
-    plt.title('Positional encodings')
-    plt.imshow(positional_encodings_img); plt.show()
+    plt.title("Positional encodings")
+    plt.imshow(positional_encodings_img)
+    plt.show()
 
 
 if __name__ == "__main__":

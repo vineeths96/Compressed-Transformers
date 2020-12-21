@@ -14,12 +14,12 @@ from .constants import BOS_TOKEN, EOS_TOKEN, PAD_TOKEN, DATA_DIR_PATH
 
 
 class DatasetType(enum.Enum):
-    IWSLT = 0,
+    IWSLT = (0,)
     WMT14 = 1
 
 
 class LanguageDirection(enum.Enum):
-    E2G = 0,
+    E2G = (0,)
     G2E = 1
 
 
@@ -30,11 +30,11 @@ class LanguageDirection(enum.Enum):
 
 class FastTranslationDataset(Dataset):
     """
-        After understanding the source code of torch text's IWSLT, TranslationDataset and Dataset I realized how I
-        can make data preparation much faster (tokenization was taking a lot of time and there is no need to redo it
-        every time) by using a simple caching mechanism.
+    After understanding the source code of torch text's IWSLT, TranslationDataset and Dataset I realized how I
+    can make data preparation much faster (tokenization was taking a lot of time and there is no need to redo it
+    every time) by using a simple caching mechanism.
 
-        This dataset leverages that caching mechanism which reduced loading time from ~70s -> 2.5s (massive!)
+    This dataset leverages that caching mechanism which reduced loading time from ~70s -> 2.5s (massive!)
 
     """
 
@@ -47,12 +47,12 @@ class FastTranslationDataset(Dataset):
 
     def __init__(self, cache_path, fields, **kwargs):
         # save_cache interleaves src and trg examples so here we read the cache file having that format in mind
-        cached_data = [line.split() for line in open(cache_path, encoding='utf-8')]
+        cached_data = [line.split() for line in open(cache_path, encoding="utf-8")]
 
         cached_data_src = cached_data[0::2]  # Even lines contain source examples
         cached_data_trg = cached_data[1::2]  # Odd lines contain target examples
 
-        assert len(cached_data_src) == len(cached_data_trg), f'Source and target data should be of the same length.'
+        assert len(cached_data_src) == len(cached_data_trg), f"Source and target data should be of the same length."
 
         examples = []
         src_dataset_total_number_of_tokens = 0
@@ -60,8 +60,8 @@ class FastTranslationDataset(Dataset):
         for src_tokenized_data, trg_tokenized_data in zip(cached_data_src, cached_data_trg):
             ex = Example()
 
-            setattr(ex, 'src', src_tokenized_data)
-            setattr(ex, 'trg', trg_tokenized_data)
+            setattr(ex, "src", src_tokenized_data)
+            setattr(ex, "trg", trg_tokenized_data)
 
             examples.append(ex)
 
@@ -70,12 +70,16 @@ class FastTranslationDataset(Dataset):
             trg_dataset_total_number_of_tokens += len(trg_tokenized_data)
 
         # Print relevant information about the dataset (parsing the cache file name)
-        filename_parts = os.path.split(cache_path)[1].split('_')
-        src_language, trg_language = ('English', 'German') if filename_parts[0] == 'en' else ('German', 'English')
-        dataset_name = 'IWSLT' if filename_parts[2] == 'iwslt' else 'WMT-14'
-        dataset_type = 'train' if filename_parts[3] == 'train' else 'val'
-        print(f'{dataset_type} dataset ({dataset_name}) has {src_dataset_total_number_of_tokens} tokens in the source language ({src_language}) corpus.')
-        print(f'{dataset_type} dataset ({dataset_name}) has {trg_dataset_total_number_of_tokens} tokens in the target language ({trg_language}) corpus.')
+        filename_parts = os.path.split(cache_path)[1].split("_")
+        src_language, trg_language = ("English", "German") if filename_parts[0] == "en" else ("German", "English")
+        dataset_name = "IWSLT" if filename_parts[2] == "iwslt" else "WMT-14"
+        dataset_type = "train" if filename_parts[3] == "train" else "val"
+        print(
+            f"{dataset_type} dataset ({dataset_name}) has {src_dataset_total_number_of_tokens} tokens in the source language ({src_language}) corpus."
+        )
+        print(
+            f"{dataset_type} dataset ({dataset_name}) has {trg_dataset_total_number_of_tokens} tokens in the target language ({trg_language}) corpus."
+        )
 
         # Call the parent class Dataset's constructor
         super().__init__(examples, fields, **kwargs)
@@ -83,7 +87,7 @@ class FastTranslationDataset(Dataset):
 
 class DatasetWrapper(FastTranslationDataset):
     """
-        Just a wrapper around the FastTranslationDataset.
+    Just a wrapper around the FastTranslationDataset.
 
     """
 
@@ -97,11 +101,11 @@ class DatasetWrapper(FastTranslationDataset):
 
 
 def save_cache(cache_path, dataset):
-    with open(cache_path, 'w', encoding='utf-8') as cache_file:
+    with open(cache_path, "w", encoding="utf-8") as cache_file:
         # Interleave source and target tokenized examples, source is on even lines, target is on odd lines
         for ex in dataset.examples:
-            cache_file.write(' '.join(ex.src) + '\n')
-            cache_file.write(' '.join(ex.trg) + '\n')
+            cache_file.write(" ".join(ex.src) + "\n")
+            cache_file.write(" ".join(ex.trg) + "\n")
 
 
 #
@@ -111,8 +115,8 @@ def save_cache(cache_path, dataset):
 
 def get_datasets_and_vocabs(dataset_path, language_direction, use_iwslt=True, use_caching_mechanism=True):
     german_to_english = language_direction == LanguageDirection.G2E.name
-    spacy_de = spacy.load('de_core_news_sm')
-    spacy_en = spacy.load('en_core_web_sm')
+    spacy_de = spacy.load("de_core_news_sm")
+    spacy_en = spacy.load("en_core_web_sm")
 
     def tokenize_de(text):
         return [tok.text for tok in spacy_de.tokenizer(text)]
@@ -125,18 +129,20 @@ def get_datasets_and_vocabs(dataset_path, language_direction, use_iwslt=True, us
     src_tokenizer = tokenize_de if german_to_english else tokenize_en
     trg_tokenizer = tokenize_en if german_to_english else tokenize_de
     src_field_processor = Field(tokenize=src_tokenizer, pad_token=PAD_TOKEN, batch_first=True)
-    trg_field_processor = Field(tokenize=trg_tokenizer, init_token=BOS_TOKEN, eos_token=EOS_TOKEN, pad_token=PAD_TOKEN, batch_first=True)
+    trg_field_processor = Field(
+        tokenize=trg_tokenizer, init_token=BOS_TOKEN, eos_token=EOS_TOKEN, pad_token=PAD_TOKEN, batch_first=True
+    )
 
-    fields = [('src', src_field_processor), ('trg', trg_field_processor)]
+    fields = [("src", src_field_processor), ("trg", trg_field_processor)]
     MAX_LEN = 100  # filter out examples that have more than MAX_LEN tokens
     filter_pred = lambda x: len(x.src) <= MAX_LEN and len(x.trg) <= MAX_LEN
 
     # Only call once the splits function it is super slow as it constantly has to redo the tokenization
-    prefix = 'de_en' if german_to_english else 'en_de'
-    prefix += '_iwslt' if use_iwslt else '_wmt14'
-    train_cache_path = os.path.join(dataset_path, f'{prefix}_train_cache.csv')
-    val_cache_path = os.path.join(dataset_path, f'{prefix}_val_cache.csv')
-    test_cache_path = os.path.join(dataset_path, f'{prefix}_test_cache.csv')
+    prefix = "de_en" if german_to_english else "en_de"
+    prefix += "_iwslt" if use_iwslt else "_wmt14"
+    train_cache_path = os.path.join(dataset_path, f"{prefix}_train_cache.csv")
+    val_cache_path = os.path.join(dataset_path, f"{prefix}_val_cache.csv")
+    test_cache_path = os.path.join(dataset_path, f"{prefix}_test_cache.csv")
 
     # This simple caching mechanism gave me ~30x speedup on my machine! From ~70s -> ~2.5s!
     ts = time.time()
@@ -145,14 +151,11 @@ def get_datasets_and_vocabs(dataset_path, language_direction, use_iwslt=True, us
         # .src and .trg attributes which contain a tokenized list of strings (created by tokenize_en and tokenize_de).
         # It's that simple, we can consider our datasets as a table with 2 columns 'src' and 'trg'
         # each containing fields with tokenized strings from source and target languages
-        src_ext = '.de' if german_to_english else '.en'
-        trg_ext = '.en' if german_to_english else '.de'
+        src_ext = ".de" if german_to_english else ".en"
+        trg_ext = ".en" if german_to_english else ".de"
         dataset_split_fn = datasets.IWSLT.splits if use_iwslt else datasets.WMT14.splits
         train_dataset, val_dataset, test_dataset = dataset_split_fn(
-            exts=(src_ext, trg_ext),
-            fields=fields,
-            root=dataset_path,
-            filter_pred=filter_pred
+            exts=(src_ext, trg_ext), fields=fields, root=dataset_path, filter_pred=filter_pred
         )
 
         save_cache(train_cache_path, train_dataset)
@@ -162,13 +165,10 @@ def get_datasets_and_vocabs(dataset_path, language_direction, use_iwslt=True, us
         # it's actually better to load from cache as we'll get rid of '\xa0', '\xa0 ' and '\x85' unicode characters
         # which we don't need and which SpaCy unfortunately includes as tokens.
         train_dataset, val_dataset = DatasetWrapper.get_train_and_val_datasets(
-            train_cache_path,
-            val_cache_path,
-            fields,
-            filter_pred=filter_pred
+            train_cache_path, val_cache_path, fields, filter_pred=filter_pred
         )
 
-    print(f'Time it took to prepare the data: {time.time() - ts:3f} seconds.')
+    print(f"Time it took to prepare the data: {time.time() - ts:3f} seconds.")
 
     MIN_FREQ = 2
     # __getattr__ implementation in the base Dataset class enables us to call .src on Dataset objects even though
@@ -185,20 +185,20 @@ global longest_src_sentence, longest_trg_sentence
 
 def batch_size_fn(new_example, count, sofar):
     """
-        If we use this function in the BucketIterator the batch_size is no longer the number of examples/sentences
-        in a batch but a number of tokens in a batch - which allows us to max out VRAM on a given GPU.
+    If we use this function in the BucketIterator the batch_size is no longer the number of examples/sentences
+    in a batch but a number of tokens in a batch - which allows us to max out VRAM on a given GPU.
 
-        Example: if we don't use this function and we set batch size to say 10 we will sometimes end up with
-        a tensor of size (10, 100) because the longest sentence had a size of 100 tokens but other times we'll end
-        up with a size of (10, 5) because the longest sentence had only 5 tokens!
+    Example: if we don't use this function and we set batch size to say 10 we will sometimes end up with
+    a tensor of size (10, 100) because the longest sentence had a size of 100 tokens but other times we'll end
+    up with a size of (10, 5) because the longest sentence had only 5 tokens!
 
-        With this function what we do is we specify that source and target tensors can't go over a certain number
-        of tokens like 1000. So usually either source or target tensors will contain around 1000 tokens and
-        in worst case both will be really close to a 1000 tokens each. If that is still below max VRAM availabe on
-        the system we're using the max potential of our GPU w.r.t. VRAM.
+    With this function what we do is we specify that source and target tensors can't go over a certain number
+    of tokens like 1000. So usually either source or target tensors will contain around 1000 tokens and
+    in worst case both will be really close to a 1000 tokens each. If that is still below max VRAM availabe on
+    the system we're using the max potential of our GPU w.r.t. VRAM.
 
-        Note: to understand this function you unfortunately would probably have to dig deeper into torch text's
-        source code.
+    Note: to understand this function you unfortunately would probably have to dig deeper into torch text's
+    source code.
 
     """
     global longest_src_sentence, longest_trg_sentence
@@ -220,15 +220,17 @@ def batch_size_fn(new_example, count, sofar):
 # https://github.com/pytorch/text/issues/536#issuecomment-719945594 <- there is a "bug" in BucketIterator i.e. it's
 # description is misleading as it won't group examples of similar length unless you set sort_within_batch to True!
 def get_data_loaders(dataset_path, language_direction, dataset_name, batch_size, device):
-    train_dataset, val_dataset, src_field_processor, trg_field_processor = get_datasets_and_vocabs(dataset_path, language_direction, dataset_name == DatasetType.IWSLT.name)
+    train_dataset, val_dataset, src_field_processor, trg_field_processor = get_datasets_and_vocabs(
+        dataset_path, language_direction, dataset_name == DatasetType.IWSLT.name
+    )
 
     # using default sorting function which
     train_token_ids_loader, val_token_ids_loader = BucketIterator.splits(
-     datasets=(train_dataset, val_dataset),
-     batch_size=batch_size,
-     device=device,
-     sort_within_batch=True,
-     batch_size_fn=batch_size_fn
+        datasets=(train_dataset, val_dataset),
+        batch_size=batch_size,
+        device=device,
+        sort_within_batch=True,
+        batch_size_fn=batch_size_fn,
     )
 
     return train_token_ids_loader, val_token_ids_loader, src_field_processor, trg_field_processor
@@ -251,9 +253,13 @@ def get_masks_and_count_tokens_trg(trg_token_ids_batch, pad_token_id):
 
     # Same as src_mask but we additionally want to mask tokens from looking forward into the future tokens
     # Note: wherever the mask value is true we want to attend to that token, otherwise we mask (ignore) it.
-    sequence_length = trg_token_ids_batch.shape[1]  # trg_token_ids shape = (B, T) where T max trg token-sequence length
+    sequence_length = trg_token_ids_batch.shape[
+        1
+    ]  # trg_token_ids shape = (B, T) where T max trg token-sequence length
     trg_padding_mask = (trg_token_ids_batch != pad_token_id).view(batch_size, 1, 1, -1)  # shape = (B, 1, 1, T)
-    trg_no_look_forward_mask = torch.triu(torch.ones((1, 1, sequence_length, sequence_length), device=device) == 1).transpose(2, 3)
+    trg_no_look_forward_mask = torch.triu(
+        torch.ones((1, 1, sequence_length, sequence_length), device=device) == 1
+    ).transpose(2, 3)
 
     # logic AND operation (both padding mask and no-look-forward must be true to attend to a certain target token)
     trg_mask = trg_padding_mask & trg_no_look_forward_mask  # final shape = (B, 1, T, T)
@@ -290,14 +296,22 @@ def get_src_and_trg_batches(token_ids_batch):
 #
 
 
-def sample_text_from_loader(src_field_processor, trg_field_processor, token_ids_loader, num_samples=2, sample_src=True, sample_trg=True, show_padded=False):
-    assert sample_src or sample_trg, f'Either src or trg or both must be enabled.'
+def sample_text_from_loader(
+    src_field_processor,
+    trg_field_processor,
+    token_ids_loader,
+    num_samples=2,
+    sample_src=True,
+    sample_trg=True,
+    show_padded=False,
+):
+    assert sample_src or sample_trg, f"Either src or trg or both must be enabled."
 
     for b_idx, token_ids_batch in enumerate(token_ids_loader):
         if b_idx == num_samples:  # Number of sentence samples to print
             break
 
-        print('*' * 5)
+        print("*" * 5)
         if sample_src:
             print("Source text:", end="\t")
             for token_id in token_ids_batch.src[0]:  # print only the first example from the batch
@@ -328,19 +342,22 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dataset_name = DatasetType.IWSLT.name
     language_direction = LanguageDirection.G2E.name
-    train_token_ids_loader, val_token_ids_loader, src_field_processor, trg_field_processor = get_data_loaders(DATA_DIR_PATH, language_direction, dataset_name, batch_size, device)
+    train_token_ids_loader, val_token_ids_loader, src_field_processor, trg_field_processor = get_data_loaders(
+        DATA_DIR_PATH, language_direction, dataset_name, batch_size, device
+    )
 
     # Verify that the mask logic is correct
     pad_token_id = src_field_processor.vocab.stoi[PAD_TOKEN]
     for batch in train_token_ids_loader:
         # Visually inspect that masks make sense
-        src_padding_mask, trg_mask, num_src_tokens, num_trg_tokens = get_masks_and_count_tokens(batch.src, batch.trg, pad_token_id, device)
+        src_padding_mask, trg_mask, num_src_tokens, num_trg_tokens = get_masks_and_count_tokens(
+            batch.src, batch.trg, pad_token_id, device
+        )
         break
 
     # Check vocab size
-    print(f'Source vocabulary size={len(src_field_processor.vocab)}')
-    print(f'Target vocabulary size={len(trg_field_processor.vocab)}')
+    print(f"Source vocabulary size={len(src_field_processor.vocab)}")
+    print(f"Target vocabulary size={len(trg_field_processor.vocab)}")
 
     # Show text from token loader
     sample_text_from_loader(src_field_processor, trg_field_processor, train_token_ids_loader)
-

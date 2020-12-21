@@ -4,6 +4,13 @@ from torch.nn import functional as F
 
 
 def quantize(tensor, bits):
+    """
+    Quantization function
+    :param tensor: Tensor to be quantized
+    :param bits: Number of bits of quantization
+    :return: Quantized code
+    """
+
     s = (1 << bits) - 1
 
     # norm = torch.norm(tensor)
@@ -26,8 +33,13 @@ def quantize(tensor, bits):
     return norm, sign_xi_array
 
 
-def dequantize(norm, sign_xi_array, bits):
-    s = (1 << bits) - 1
+def dequantize(norm, sign_xi_array):
+    """
+    Dequantize the quantization code
+    :param norm: Norm of code
+    :param sign_xi_array: Rounded vector of code
+    :return: Dequantized weights
+    """
 
     weights = norm * sign_xi_array
 
@@ -56,13 +68,13 @@ class QuantizedLinear(nn.Linear):
     def __init__(self, *args, weight_bits=8, warmup_step=0, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if weight_bits < 2:
-            raise ValueError(f"weight_bits={weight_bits} must be higher than 1 ")
+        if weight_bits < 1:
+            raise ValueError(f"weight_bits={weight_bits} must be higher than 0 ")
 
         self.weight_bits = weight_bits
         self.warmup_step = warmup_step
         self.accumulation_bits = 32
-        
+
         self._fake_quantized_weight = None
         if kwargs.get("bias", True):
             self.register_buffer("quantized_bias", None)
@@ -70,13 +82,12 @@ class QuantizedLinear(nn.Linear):
 
         self.register_buffer("_step", torch.zeros(1))
 
-        # buffers for inference
         self.register_buffer("quantized_weight", None)
         self.register_buffer("weight_norm", None)
 
     def training_quantized_forward(self, input):
-        """Fake quantizes weights. This function should only be used while training"""
-        assert self.training, "should only be called when training"
+        """Fake quantizes weights. Function should only be used while training"""
+        assert self.training, "Should be called only during training"
 
         self._fake_quantized_weight = _fake_quantize(self.weight, self.weight_bits)
         out = F.linear(input, self._fake_quantized_weight, self.bias)
@@ -84,8 +95,8 @@ class QuantizedLinear(nn.Linear):
         return out
 
     def inference_quantized_forward(self, input):
-        """Simulate quantized inference. This function should only be used while doing inference"""
-        assert not self.training, "should only be called when not training"
+        """Simulate quantized inference. Function should be called only during inference"""
+        assert not self.training, "Should be called only during inference"
 
         weight = self.weight_norm * self.quantized_weight
 
@@ -97,12 +108,14 @@ class QuantizedLinear(nn.Linear):
         return out
 
     def _eval(self):
+        """Sets the model for inference by quantizing the model"""
         self.weight_norm, self.quantized_weight = quantize(self.weight, self.weight_bits)
 
         if self.bias is not None:
             self.bias_norm, self.quantized_bias = quantize(self.bias, self.accumulation_bits)
 
     def forward(self, input):
+        """Passes the input through the model during training and inference"""
         if self.training:
             if self._step > self.warmup_step:
                 out = self.training_quantized_forward(input)
@@ -116,15 +129,29 @@ class QuantizedLinear(nn.Linear):
 
 
 def quantizer(model, quantization_bits=7, quantize_all_linear=False):
+    """
+    Recursively replace linear layers with quantization layers
+    :param model: Model to be quantized
+    :param quantization_bits: Number of bits of quantization
+    :param quantize_all_linear: Quantize all layers
+    :return: Quantized model
+    """
+
     for name, layer in model.named_children():
-        if 'generator' in name:
+        # SKip generator quantization
+        if "generator" in name:
             continue
 
+        # Quantization
         if type(layer) == nn.Linear and quantize_all_linear:
-            model.__dict__['_modules'][name] = QuantizedLinear(layer.in_features, layer.out_features, weight_bits=quantization_bits)
+            model.__dict__["_modules"][name] = QuantizedLinear(
+                layer.in_features, layer.out_features, weight_bits=quantization_bits
+            )
         elif type(layer) == nn.Linear:
-            if name in ['0', '1', '2']:
-                model.__dict__['_modules'][name] = QuantizedLinear(layer.in_features, layer.out_features, weight_bits=quantization_bits)
+            if name in ["0", "1", "2"]:
+                model.__dict__["_modules"][name] = QuantizedLinear(
+                    layer.in_features, layer.out_features, weight_bits=quantization_bits
+                )
         else:
             layer_types = [type(l) for l in layer.modules()]
 

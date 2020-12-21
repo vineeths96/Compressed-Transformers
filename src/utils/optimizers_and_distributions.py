@@ -4,10 +4,10 @@ from torch import nn
 
 class CustomLRAdamOptimizer:
     """
-        Linear ramp learning rate for the warm-up number of steps and then start decaying
-        according to the inverse square root law of the current training step number.
+    Linear ramp learning rate for the warm-up number of steps and then start decaying
+    according to the inverse square root law of the current training step number.
 
-        Check out playground.py for visualization of the learning rate (visualize_custom_lr_adam).
+    Check out playground.py for visualization of the learning rate (visualize_custom_lr_adam).
     """
 
     def __init__(self, optimizer, model_dimension, num_of_warmup_steps):
@@ -22,7 +22,7 @@ class CustomLRAdamOptimizer:
         current_learning_rate = self.get_current_learning_rate()
 
         for p in self.optimizer.param_groups:
-            p['lr'] = current_learning_rate
+            p["lr"] = current_learning_rate
 
         self.optimizer.step()  # apply gradients
 
@@ -40,10 +40,10 @@ class CustomLRAdamOptimizer:
 
 class LabelSmoothingDistribution(nn.Module):
     """
-        Instead of one-hot target distribution set the target word's probability to "confidence_value" (usually 0.9)
-        and distribute the rest of the "smoothing_value" mass (usually 0.1) over the rest of the vocab.
+    Instead of one-hot target distribution set the target word's probability to "confidence_value" (usually 0.9)
+    and distribute the rest of the "smoothing_value" mass (usually 0.1) over the rest of the vocab.
 
-        Check out playground.py for visualization of how the smooth target distribution looks like compared to one-hot.
+    Check out playground.py for visualization of how the smooth target distribution looks like compared to one-hot.
     """
 
     def __init__(self, smoothing_value, pad_token_id, trg_vocab_size, device):
@@ -68,17 +68,17 @@ class LabelSmoothingDistribution(nn.Module):
         smooth_target_distributions.fill_(self.smoothing_value / (self.trg_vocab_size - 2))
 
         smooth_target_distributions.scatter_(1, trg_token_ids_batch, self.confidence_value)
-        smooth_target_distributions[:, self.pad_token_id] = 0.
+        smooth_target_distributions[:, self.pad_token_id] = 0.0
 
         # If we had a pad token as a target we set the distribution to all 0s instead of smooth labeled distribution
-        smooth_target_distributions.masked_fill_(trg_token_ids_batch == self.pad_token_id, 0.)
+        smooth_target_distributions.masked_fill_(trg_token_ids_batch == self.pad_token_id, 0.0)
 
         return smooth_target_distributions
 
 
 class OneHotDistribution(nn.Module):
     """
-        Create a one hot distribution (feel free to ignore used only in playground.py)
+    Create a one hot distribution (feel free to ignore used only in playground.py)
     """
 
     def __init__(self, pad_token_id, trg_vocab_size):
@@ -92,9 +92,9 @@ class OneHotDistribution(nn.Module):
 
         batch_size = trg_token_ids_batch.shape[0]
         one_hot_distribution = torch.zeros((batch_size, self.trg_vocab_size))
-        one_hot_distribution.scatter_(1, trg_token_ids_batch, 1.)
+        one_hot_distribution.scatter_(1, trg_token_ids_batch, 1.0)
 
         # If we had a pad token as a target we set the distribution to all 0s instead of one-hot distribution
-        one_hot_distribution.masked_fill_(trg_token_ids_batch == self.pad_token_id, 0.)
+        one_hot_distribution.masked_fill_(trg_token_ids_batch == self.pad_token_id, 0.0)
 
         return one_hot_distribution
