@@ -197,8 +197,8 @@ if __name__ == "__main__":
     parser.add_argument("--binarize_all_linear", type=bool, help="binarize all linear layers", default=False)
 
     parser.add_argument("--quantize", type=bool, help="quantize attention linear layers", default=False)
-    parser.add_argument("--quantize_bits", type=int, help="quantize attention linear layers", default=7)
-    parser.add_argument("--quantize_all_linear", type=bool, help="quantize attention linear layers", default=False)
+    parser.add_argument("--quantize_bits", type=int, help="quantization bits", default=7)
+    parser.add_argument("--quantize_all_linear", type=bool, help="quantize all linear layers", default=False)
 
     args = parser.parse_args()
 
