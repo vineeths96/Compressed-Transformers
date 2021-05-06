@@ -52,7 +52,7 @@ class FakeLinearQuantizationFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, bits=7):
         norm, quantized_weight = quantize(input, bits)
-        return dequantize(norm, quantized_weight, bits)
+        return dequantize(norm, quantized_weight)
 
     @staticmethod
     def backward(ctx, grad_output):
